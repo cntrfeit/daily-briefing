@@ -42,7 +42,7 @@ def add_timed_event(eventdat,cal):
     event_info = {}
     event_info['start'] = eventdat['DTSTART'].dt
     event_info['end'] = eventdat['DTEND'].dt
-    event_info['summary'] = eventdat.get('SUMMARY').to_ical().decode('UTF-8').strip()
+    event_info['summary'] = eventdat.get('SUMMARY').to_ical().decode('UTF-8').strip().replace('\,',',')
     event_info['allday'] = (type(eventdat['DTSTART'].dt) is date)
     event_info['cal'] = cal
     event_info['sortstart'] = event_info['start'].astimezone(tz)
@@ -59,7 +59,7 @@ def add_fullday_events(eventdat,cal):
         event_info = {}
         event_info['start'] = eventdat['DTSTART'].dt
         event_info['end'] = eventdat['DTEND'].dt
-        event_info['summary'] = eventdat.get('SUMMARY').to_ical().decode('UTF-8').strip()
+        event_info['summary'] = eventdat.get('SUMMARY').to_ical().decode('UTF-8').strip().replace('\,',',')
         event_info['allday'] = (type(eventdat['DTSTART'].dt) is date)
         event_info['cal'] = cal
         event_info['sortstart'] = (datetime.combine(event_info['start'], time(0,0)) + timedelta(days=i)).astimezone(tz)
