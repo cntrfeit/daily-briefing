@@ -27,8 +27,6 @@ import time
 from PIL import Image,ImageDraw,ImageFont
 import traceback
 
-from lib import epd7in5bc_V2
-
 from datetime import datetime, timedelta, date, time
 import pytz
 from dateutil.tz import UTC
@@ -94,7 +92,7 @@ def text_wrap(text, font, max_width):
             lines.append(line)
     return lines
 
-def make_image():
+def make_image(width, height):
     font48 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 48)
     font36 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 36)
     font24 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 24)
@@ -106,25 +104,25 @@ def make_image():
     # for 1/4 inch top and bottom borders, need 30.76 pixels
     # take an extra one for buffer
     topborder = 32
-    bottomborder = epd.width - 32
+    bottomborder = width - 32
 
     # basic portrait layout
     logging.info("draw basic vertical image")
-    image = Image.new('1', (epd.height, epd.width), 255)
-    imagered = Image.new('1', (epd.height, epd.width), 255)
+    image = Image.new('1', (height, width), 255)
+    imagered = Image.new('1', (height, width), 255)
     draw_image = ImageDraw.Draw(image)
     draw_imagered = ImageDraw.Draw(imagered)
 
     # date at the top
     today_dt = get_date()
     w,h = draw_image.textsize(today_dt, font = font48)
-    draw_image.text(((epd.height-w)/2,topborder), today_dt, font = font48, fill = 0)
+    draw_image.text(((height-w)/2,topborder), today_dt, font = font48, fill = 0)
     topheight = topborder+h+2
 
     # weekday just below
     today_day = get_day()
     w,h = draw_image.textsize(today_day, font = font36)
-    draw_image.text(((epd.height-w)/2,topheight), today_day, font = font36, fill = 0)
+    draw_image.text(((height-w)/2,topheight), today_day, font = font36, fill = 0)
     topheight = topheight+h+24
 
     # draw weather
@@ -137,10 +135,10 @@ def make_image():
     w,h = draw_image.textsize(alerts_blurb, font=font18)
     w2,h2 = draw_image.textsize(alerts_blurb, font=font15)
     if alertcolor == 'red':
-        draw_imagered.rectangle(((epd.height-w-4)/2,topheight,(epd.height-w-4)/2 + w + 2,topheight+h+4),outline=0)
-        draw_image.text(((epd.height-w)/2,topheight+2), alerts_blurb, font=font18,fill=0)
+        draw_imagered.rectangle(((height-w-4)/2,topheight,(height-w-4)/2 + w + 2,topheight+h+4),outline=0)
+        draw_image.text(((height-w)/2,topheight+2), alerts_blurb, font=font18,fill=0)
     else:
-        draw_image.text(((epd.height-w2)/2,topheight+2), alerts_blurb, font=font15,fill=0)
+        draw_image.text(((height-w2)/2,topheight+2), alerts_blurb, font=font15,fill=0)
     topheight = topheight+h+6
         
     # 3-hour interval forecasts
@@ -183,6 +181,9 @@ def make_image():
     for i in range(0,len(sortedlines)):
         line = sortedlines[i]
         if line['header'] == True:
+            # don't want a hanging on date without info below it
+            if rows == rowmax-1:
+                break
             beginheight = beginheight + 4
         writelines = text_wrap(line['display'], eval(line['font']), 479)
         first = True
@@ -225,16 +226,16 @@ def make_image():
     # updated at timestamp, at bottom
     lastupdatedtext = 'Last updated: ' + get_lastupdatedtime()
     w,h = draw_image.textsize(lastupdatedtext, font=font12)
-    draw_image.text(((epd.height-w)/2,bottomborder-h-2), lastupdatedtext, font=font12, fill=0)
+    draw_image.text(((height-w)/2,bottomborder-h-2), lastupdatedtext, font=font12, fill=0)
     
     return (image,imagered)
 
 def save_image():
 
     logging.info("save image")
-    (image,imagered) = make_image()
-    image.save(os.path.join(basedir, 'test.bmp'))
-    imagered.save(os.path.join(basedir, 'testred.bmp'))
+    (image,imagered) = make_image(800,480)
+    image.save(os.path.join(basedir, 'temp/test.bmp'))
+    imagered.save(os.path.join(basedir, 'temp/testred.bmp'))
 
 def display_image():
 
@@ -242,7 +243,7 @@ def display_image():
     epd.init()
     epd.Clear()
 
-    (image,imagered) = make_image()
+    (image,imagered) = make_image(epd.width,epd.height)
 
     epd.display(epd.getbuffer(image),epd.getbuffer(imagered))
 
@@ -257,6 +258,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'save':
         save_image()
     else:
+        from lib import epd7in5bc_V2
+
         epd = epd7in5bc_V2.EPD()
         display_image()
 
