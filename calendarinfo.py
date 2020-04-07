@@ -54,8 +54,9 @@ def add_fullday_events(eventdat,cal):
     tz = pytz.timezone(TIME_ZONE)
     full_day_events = []
     numdays = (eventdat['DTEND'].dt - eventdat['DTSTART'].dt).days
+    print(eventdat['DTEND'].dt, eventdat['DTSTART'].dt)
 
-    for i in range(0,numdays+1):
+    for i in range(0,numdays):
         event_info = {}
         event_info['start'] = eventdat['DTSTART'].dt
         event_info['end'] = eventdat['DTEND'].dt
