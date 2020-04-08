@@ -116,11 +116,11 @@ def cal_for_display():
         # all day events
         if event_info['allday'] == True:
             # check if it's the first event of the day
-            if event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0, day=(event_info['sortstart'] + timedelta(days=1)).day) > currdate:
-                lines[row] = {'display': event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0, day=(event_info['sortstart'] + timedelta(days=1)).day).strftime("%-d %b").upper(),
+            if event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0) > currdate:
+                lines[row] = {'display': event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0, day=(event_info['sortstart']).day).strftime("%-d %b").upper(),
                         'font': 'font24', 'header': True}
                 row = row+1
-                currdate = event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0, day=event_info['sortstart'].day+1)
+                currdate = (event_info['sortstart']).replace(microsecond=0,second=0, minute=0, hour=0)
 
             # print ALL DAY and description
             lines[row] = {'display': '   ' + event_info['summary'],
@@ -133,10 +133,10 @@ def cal_for_display():
                 lines[row] = {'display': event_info['sortstart'].strftime("%-d %b").upper(),
                         'font': 'font24', 'header': True}
                 row = row+1
-                currdate = event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0)
+                currdate = (event_info['sortstart']).replace(microsecond=0,second=0, minute=0, hour=0)
 
             # print start time and description
-            lines[row] = {'display': '   ' + event_info['sortstart'].strftime("%I:%M%p") + ': ' + event_info['summary'],
+            lines[row] = {'display': '   ' + event_info['sortstart'].strftime("%-I:%M%p") + ': ' + event_info['summary'],
                     'font': 'font21', 'header': False}
 
         # iterate line count up
