@@ -92,6 +92,46 @@ def text_wrap(text, font, max_width):
             lines.append(line)
     return lines
 
+def draw_forecast(forecasts,x):
+    #(hr,temp,pop,icon) = extract_forecasts(forecastdat,relhr,TIME_ZONE)
+    (hr,temp,pop,icon) = extract_DS_forecasts(forecasts,x)
+
+    forecastImage = Image.new('1', (94, 181), 255)
+    draw_forecast = ImageDraw.Draw(forecastImage)
+
+    # fonts
+    font12 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 12)
+    font15 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 15)
+    font24 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 24)
+
+    # box around forecast
+    draw_forecast.rectangle((0,0,93,180), outline=0)
+
+    # time of forecast
+    w1,h1 = draw_forecast.textsize(hr, font=font15)
+    draw_forecast.text(((94-w1)/2,1), hr, font=font15, fill=0)
+
+    # temperature in C
+    tempC = temp + "°C"
+    w2,h2 = draw_forecast.textsize(tempC, font=font24)
+    draw_forecast.text(((94-w2)/2,2+h1+1), tempC, font=font24, fill=0)
+    # temperature in F
+    tempF = str(int(float(temp)*9/5 + 32)) + "°F"
+    w3,h3 = draw_forecast.textsize(tempF, font=font24)
+    draw_forecast.text(((94-w3)/2,2+h1+1+h2+1), tempF, font=font24, fill=0)
+    
+    # forecast icon
+    forecastImage.paste(icon,(3,2+h1+1+h2+1+h3+4))
+
+    # prob of precip
+    poptext = "PoP: " + pop + "%"
+    w4,h4 = draw_forecast.textsize(poptext, font=font12)
+    draw_forecast.text(((94-w4)/2,180-h4-1), poptext, font=font12, fill=0)
+
+    print(forecastImage.size)
+
+    return forecastImage
+
 def make_image(width, height):
     font48 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 48)
     font36 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 36)
@@ -117,13 +157,13 @@ def make_image(width, height):
     today_dt = get_date()
     w,h = draw_image.textsize(today_dt, font = font48)
     draw_image.text(((height-w)/2,topborder), today_dt, font = font48, fill = 0)
-    topheight = topborder+h+2
+    topheight = topborder+h+1
 
     # weekday just below
     today_day = get_day()
     w,h = draw_image.textsize(today_day, font = font36)
     draw_image.text(((height-w)/2,topheight), today_day, font = font36, fill = 0)
-    topheight = topheight+h+24
+    topheight = topheight+h+12
 
     # draw weather
 
@@ -145,33 +185,11 @@ def make_image(width, height):
     for x in range(0,5):
         relhr = 3*x
         left = 96*x
-        #(hr,temp,pop,icon) = extract_forecasts(forecastdat,relhr,TIME_ZONE)
-        (hr,temp,pop,icon) = extract_DS_forecasts(forecasts,x)
-        # box
-        draw_image.rectangle((left+1,topheight,left+94,topheight+192), outline=0)
 
-        # time
-        w,h = draw_image.textsize(hr, font=font15)
-        draw_image.text((left+1+(94-w)/2,topheight+2), hr, font=font15, fill=0)
+        # draw forecast
+        image.paste(draw_forecast(forecasts,x),(left+1,topheight,left+95,topheight+181))
 
-        # temperature in C
-        tempC = temp + "°C"
-        w2,h2 = draw_image.textsize(tempC, font=font24)
-        draw_image.text((left+1+(94-w2)/2,topheight+4+h+2), tempC, font=font24, fill=0)
-        # temperature in F
-        tempF = str(int(float(temp)*9/5 + 32)) + "°F"
-        w3,h3 = draw_image.textsize(tempF, font=font24)
-        draw_image.text((left+1+(94-w3)/2,topheight+4+h+2+h2+2), tempF, font=font24, fill=0)
-
-        # image
-        image.paste(icon,(left+3,topheight+4+h+2+h2+2+h3+12))
-        #draw_image.rectangle((left+3,topheight+4+h+2+h2+2+h3+12,left+92,topheight+4+h+2+h2+2+h3+101), outline=0)
-
-        # prob of precip
-        poptext = "PoP: " + pop + "%"
-        w,h = draw_image.textsize(poptext, font=font12)
-        draw_image.text((left+1+(94-w)/2,topheight+192-h-2), poptext, font=font12, fill=0)
-    topheight = topheight + 204
+    topheight = topheight + 192
 
     # calendar
     sortedlines = cal_for_display()
