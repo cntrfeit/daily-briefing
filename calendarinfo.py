@@ -37,6 +37,19 @@ CALENDARS = [
             'name':config['calendar3']['name']}
         ]
 
+class calday:
+    def __init__(self,dt):
+        self.date = dt.date()
+        self.datestr = dt.strftime("%-d %b")
+        self.fulldayevents = []
+        self.timedevents = []
+
+    def add_fullday_event(self,event):
+        self.fulldayevents.append(event)
+
+    def add_timed_event(self,event):
+        self.timedevents.append(event)
+
 def add_timed_event(eventdat,cal):
     tz = pytz.timezone(TIME_ZONE)
     event_info = {}
@@ -89,60 +102,46 @@ def get_calendar_data():
 
     return allevents
 
-def before_today(enddate):
-    tz = pytz.timezone(TIME_ZONE)
-    starttoday = datetime.now().replace(microsecond=0,second=0, minute=0, hour=0).astimezone(tz)
+def sort_calendar_data(eventslist):
+    days = {}
+    for event in eventslist:
+        if event['start'].date() not in days:
+            days[event['start'].date()] = calday(event['start'])
+        if event['allday'] == True:
+            days[event['start'].date()].add_fullday_event(event)
+        else:
+            days[event['start'].date()].add_timed_event(event)
 
-    if enddate < starttoday:
-        return True
-    else:
-        return False
+    return days
 
 def cal_for_display():
     calendardat = get_calendar_data()
+    splitcalendar = sort_calendar_data(calendardat)
 
     logging.info("create calendar lines: start")
     tz = pytz.timezone(TIME_ZONE)
-    lines = {}
-    sortedevents = sorted(calendardat, key=lambda k: (k['sortstart'], -k['allday'], k['sortend']))
 
-    currdate = datetime(1990,1,1,0,0,0,0,pytz.UTC)
-    row = 0
-    for event_info in sortedevents:
-        # check if the day is in the past and skip it
-        if before_today(event_info['sortend']) == True:
-                continue
+    # sort through all upcoming days
+    lines=[]
+    for day in sorted(splitcalendar.keys()):
+        # print day
+        lines.append({'display': day.strftime("%-d %b").upper(),
+            'font': 'font24',
+            'header': True})
 
-        # all day events
-        if event_info['allday'] == True:
-            # check if it's the first event of the day
-            if event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0) > currdate:
-                lines[row] = {'display': event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0, day=(event_info['sortstart']).day).strftime("%-d %b").upper(),
-                        'font': 'font24', 'header': True}
-                row = row+1
-                currdate = (event_info['sortstart']).replace(microsecond=0,second=0, minute=0, hour=0)
+        # list fullday events first
+        for fulldayevent in splitcalendar[day].fulldayevents:
+            lines.append({'display': '   ' + fulldayevent['summary'],
+                'font': 'font21', 'header': False})
 
-            # print ALL DAY and description
-            lines[row] = {'display': '   ' + event_info['summary'],
-                    'font': 'font21', 'header': False}
-
-        # events at specific times
-        else:
-            # check if it's the first event of the day
-            if event_info['sortstart'].replace(microsecond=0,second=0, minute=0, hour=0) > currdate:
-                lines[row] = {'display': event_info['sortstart'].strftime("%-d %b").upper(),
-                        'font': 'font24', 'header': True}
-                row = row+1
-                currdate = (event_info['sortstart']).replace(microsecond=0,second=0, minute=0, hour=0)
-
-            # print start time and description
-            lines[row] = {'display': '   ' + event_info['sortstart'].strftime("%-I:%M%p") + ': ' + event_info['summary'],
-                    'font': 'font21', 'header': False}
-
-        # iterate line count up
-        row = row+1
+        # list timed events next (sorted)
+        sortedtimedevents = sorted(splitcalendar[day].timedevents, key=lambda k: (k['sortstart'], k['sortend']))
+        for timedevent in sortedtimedevents:
+            lines.append({'display': '   ' + timedevent['sortstart'].strftime("%-I:%M%p") + ' : ' + timedevent['summary'],
+                'font': 'font21', 'header': False})
 
     logging.info("create calendar lines: end")
+
     return lines
 
 def save_to_disk(caldat, location):

@@ -96,7 +96,7 @@ def draw_forecast(forecasts,x):
     #(hr,temp,pop,icon) = extract_forecasts(forecastdat,relhr,TIME_ZONE)
     (hr,temp,pop,icon) = extract_DS_forecasts(forecasts,x)
 
-    forecastImage = Image.new('1', (94, 181), 255)
+    forecastImage = Image.new('1', (94, 167), 255)
     draw_forecast = ImageDraw.Draw(forecastImage)
 
     # fonts
@@ -105,7 +105,7 @@ def draw_forecast(forecasts,x):
     font24 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 24)
 
     # box around forecast
-    draw_forecast.rectangle((0,0,93,180), outline=0)
+    draw_forecast.rectangle((0,0,93,166), outline=0)
 
     # time of forecast
     w1,h1 = draw_forecast.textsize(hr, font=font15)
@@ -121,16 +121,58 @@ def draw_forecast(forecasts,x):
     draw_forecast.text(((94-w3)/2,2+h1+1+h2+1), tempF, font=font24, fill=0)
     
     # forecast icon
-    forecastImage.paste(icon,(3,2+h1+1+h2+1+h3+4))
+    forecastImage.paste(icon,(3,2+h1+1+h2+1+h3+1))
 
     # prob of precip
     poptext = "PoP: " + pop + "%"
     w4,h4 = draw_forecast.textsize(poptext, font=font12)
-    draw_forecast.text(((94-w4)/2,180-h4-1), poptext, font=font12, fill=0)
-
-    print(forecastImage.size)
+    draw_forecast.text(((94-w4)/2,166-h4-1), poptext, font=font12, fill=0)
 
     return forecastImage
+
+def create_wotd_image():
+    font24 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 24)
+    font21 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 21)
+
+    # pull relevant definition data
+    wotdpage = pull_wotd_page()
+    (word, part_of_speech, pronunciation, definition) = extract_wotd_info(wotdpage)
+
+    wotdImage = Image.new('1', (478,80), 255)
+    draw_wotd = ImageDraw.Draw(wotdImage)
+
+    # word
+    wotd_line1 = word + ": "
+
+    beginheight = 1
+    w1,h1 = draw_wotd.textsize(wotd_line1, font=font24)
+    draw_wotd.text((1,beginheight), wotd_line1, font=font24, fill=0)
+
+    # pronunciation and part of speech
+    wotd_line2 = "/" + pronunciation + "/ " + part_of_speech
+
+    w2,h2 = draw_wotd.textsize(wotd_line2, font=font21)
+    draw_wotd.text((1+w1+4,beginheight-h1+h2+1), wotd_line2, font=font21, fill=0)
+    beginheight = beginheight + h1 + 1
+
+    # definition (up to 3 lines)
+    wotd_line3 = text_wrap(definition, font21, 460)
+    lines = 0
+    for line in wotd_line3:
+        if lines == 0:
+            startidx = line.find(':')
+            line = line[startidx+1:].strip()
+        if lines == 2:
+            endidx = line.rfind(':')
+            line = line[:endidx-1].strip()
+        elif lines > 2:
+            break
+        w,h = draw_wotd.textsize(line, font=font21)
+        draw_wotd.text((20,beginheight), line, font=font21, fill=0)
+        beginheight = beginheight + h + 1
+        lines = lines+1
+
+    return (wotdImage, wotdImage.size[0], wotdImage.size[1])
 
 def make_image(width, height):
     font48 = ImageFont.truetype(os.path.join(libdir, 'Font.ttc'), 48)
@@ -187,9 +229,9 @@ def make_image(width, height):
         left = 96*x
 
         # draw forecast
-        image.paste(draw_forecast(forecasts,x),(left+1,topheight,left+95,topheight+181))
+        image.paste(draw_forecast(forecasts,x),(left+1,topheight,left+95,topheight+167))
 
-    topheight = topheight + 192
+    topheight = topheight + 178
 
     # calendar
     sortedlines = cal_for_display()
@@ -219,32 +261,15 @@ def make_image(width, height):
             break
     topheight = beginheight + 12
 
-    # word of the day
-    wotdpage = pull_wotd_page()
-    (word, part_of_speech, pronunciation, definition) = extract_wotd_info(wotdpage)
-    wotd_line1 = text_wrap(word, font24, 479)
-    wotd_line2 = text_wrap("/" + pronunciation + "/ " + part_of_speech, font21, 479)
-    wotd_line3 = text_wrap(definition, font21, 460)
-    beginheight = topheight
-    for line in wotd_line1:
-        w,h = draw_image.textsize(line, font=font24)
-        draw_image.text((1,beginheight), line, font=font24, fill=0)
-        beginheight = beginheight + h + 2 
-    for line in wotd_line2:
-        w,h = draw_image.textsize(line, font=font21)
-        draw_image.text((1,beginheight), line, font=font21, fill=0)
-        beginheight = beginheight + h + 2
-    for line in wotd_line3:
-        w,h = draw_image.textsize(line, font=font21)
-        if beginheight + h < bottomborder - 20:
-            draw_image.text((19,beginheight), line, font=font21, fill=0)
-        beginheight = beginheight + h + 2
-    topheight = beginheight + 4
-
     # updated at timestamp, at bottom
     lastupdatedtext = 'Last updated: ' + get_lastupdatedtime()
     w,h = draw_image.textsize(lastupdatedtext, font=font12)
     draw_image.text(((height-w)/2,bottomborder-h-2), lastupdatedtext, font=font12, fill=0)
+    bottomheight = bottomborder-h-2-6
+
+    # word of the day (just above timestamp)
+    (word,imwidth,imheight) = create_wotd_image()
+    image.paste(word,(1,bottomheight-imheight,1+imwidth,bottomheight))
     
     return (image,imagered)
 
