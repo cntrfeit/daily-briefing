@@ -105,12 +105,13 @@ def get_calendar_data():
 def sort_calendar_data(eventslist):
     days = {}
     for event in eventslist:
-        if event['start'].date() not in days:
-            days[event['start'].date()] = calday(event['start'])
+        print(event['sortstart'])
+        if event['sortstart'].date() not in days:
+            days[event['sortstart'].date()] = calday(event['sortstart'])
         if event['allday'] == True:
-            days[event['start'].date()].add_fullday_event(event)
+            days[event['sortstart'].date()].add_fullday_event(event)
         else:
-            days[event['start'].date()].add_timed_event(event)
+            days[event['sortstart'].date()].add_timed_event(event)
 
     return days
 
