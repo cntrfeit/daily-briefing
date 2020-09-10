@@ -22,6 +22,11 @@ lon = round(config['DS weather'].getfloat('lon'),3)
 
 TIME_ZONE = config['general']['timezone']
 
+# max height of font21 is 25
+linespace21 = 25
+# max height of font24 is 29
+linespace24 = 29
+
 import logging
 import time
 from PIL import Image,ImageDraw,ImageFont
@@ -152,8 +157,9 @@ def create_wotd_image():
     wotd_line2 = "/" + pronunciation + "/ " + part_of_speech
 
     w2,h2 = draw_wotd.textsize(wotd_line2, font=font21)
-    draw_wotd.text((1+w1+4,beginheight-h1+h2+1), wotd_line2, font=font21, fill=0)
-    beginheight = beginheight + h1 + 1
+    # diff in top edge of text b/w font24 and font21 is 3 pixels
+    draw_wotd.text((1+w1+4,beginheight+3), wotd_line2, font=font21, fill=0)
+    beginheight = beginheight + linespace24 + 1
 
     # definition (up to 3 lines)
     wotd_line3 = text_wrap(definition, font21, 460)
@@ -169,7 +175,7 @@ def create_wotd_image():
             break
         w,h = draw_wotd.textsize(line, font=font21)
         draw_wotd.text((20,beginheight), line, font=font21, fill=0)
-        beginheight = beginheight + h + 1
+        beginheight = beginheight + linespace21  + 1
         lines = lines+1
 
     return (wotdImage, wotdImage.size[0], wotdImage.size[1])
@@ -252,7 +258,10 @@ def make_image(width, height):
                 writeline = '        ' + writeline
             w,h = draw_image.textsize(writeline, font=eval(line['font']))
             draw_image.text((1,beginheight), writeline, font=eval(line['font']), fill=0)
-            beginheight = beginheight + h + 2
+            if line['font'] == 'font21':
+                beginheight = beginheight + linespace21 + 1
+            elif line['font'] == 'font24':
+                beginheight = beginheight + linespace24 + 1
 
             rows = rows+1
             first = False

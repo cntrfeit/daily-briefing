@@ -18,11 +18,16 @@ from PIL import Image
 from darksky.api import DarkSky
 from darksky.types import languages, units, weather
 
+from pyowm import OWM
+
 config = configparser.ConfigParser()
 config.read('config.txt')
 
 # dark sky API
 API_KEY = config['DS weather']['key']
+
+# open weather maps API key
+OWM_API_KEY = config['OWM weather']['key']
 
 DSiconfiles = {
         'clear-day': 'sunny.png',
@@ -104,6 +109,9 @@ def get_DS_forecasts(latitude, longitude):
 
     return (everyThreeHours, forecast.alerts)
 
+def get_OWM_forecasts(latitude, longitude):
+    owm = OWM(OWM_API_KEY)
+
 def extract_DS_alerts(alertdata):
     numalerts = len(alertdata)
     text = ''
@@ -176,9 +184,12 @@ if __name__ == "__main__":
     # lat/long
     lat = round(config['DS weather'].getfloat('lat'),3)
     lon = round(config['DS weather'].getfloat('lon'),3)
+    #lat = round(config['OWM weather'].getfloat('lat'),3)
+    #lon = round(config['OWM weather'].getfloat('lon'),3)
 
     # pull forecast
     (forecastsThreeHours, alerts) = get_DS_forecasts(lat, lon)
+    #(forecastsThreeHours, alerts) = get_OWM_forecasts(lat, lon)
 
     # get any alerts
     (alertcolor, alerttext) = extract_DS_alerts(alerts)
